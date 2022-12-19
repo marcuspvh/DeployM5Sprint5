@@ -16,6 +16,7 @@ import os
 import dotenv
 import ipdb
 import dj_database_url
+from django.core.management.utils import get_random_secret_key
 
 dotenv.load_dotenv()
 
@@ -28,7 +29,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 
-SECRET_KEY = os.getenv("SECRET_KEY")
+SECRET_KEY = os.getenv("SECRET_KEY", get_random_secret_key())
+# SECRET_KEY = os.getenv("SECRET_KEY")
 # ipdb.set_trace()
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -113,9 +115,14 @@ DATABASES = {
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if DATABASE_URL:
-    db_deploy = dj_database_url.config(default=DATABASE_URL)
-    DATABASES["default"].update(db_deploy)
+    db_from_env = dj_database_url.config(
+        default=DATABASE_URL, conn_max_age=500, ssl_require=True)
+    DATABASES['default'].update(db_from_env)
     DEBUG = False
+
+if not DEBUG:
+    STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+    STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
@@ -174,9 +181,7 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 
-if not DEBUG:
-    STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
-    STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
